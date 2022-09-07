@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/digimon-tcg-search/static/css/main.964fdded.css",
-    "main.js": "/digimon-tcg-search/static/js/main.5db0ad48.js",
+    "main.js": "/digimon-tcg-search/static/js/main.ab3b1d2c.js",
     "index.html": "/digimon-tcg-search/index.html",
     "main.964fdded.css.map": "/digimon-tcg-search/static/css/main.964fdded.css.map",
-    "main.5db0ad48.js.map": "/digimon-tcg-search/static/js/main.5db0ad48.js.map"
+    "main.ab3b1d2c.js.map": "/digimon-tcg-search/static/js/main.ab3b1d2c.js.map"
   },
   "entrypoints": [
     "static/css/main.964fdded.css",
-    "static/js/main.5db0ad48.js"
+    "static/js/main.ab3b1d2c.js"
   ]
 }
