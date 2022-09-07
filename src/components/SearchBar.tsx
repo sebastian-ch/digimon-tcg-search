@@ -10,7 +10,7 @@ export default function BasicTextFields() {
 
 
     const fetchData = async (input: string) => {
-        const url = 'https://digimoncard.io/api-public/search.php?n=';
+        const url = 'https://digimoncard.io/api-public/search.php?series=Digimon Card Game&n=';
         const response = await fetch(`${url}${input}`)
         const cards = await response.json();
 
@@ -65,6 +65,7 @@ export default function BasicTextFields() {
             <Box
                 display='flex'
                 width='100%'
+                minHeight='70%'
                 justifyContent='center'
                 alignItems='center'
                 flexWrap='wrap'
