@@ -2,48 +2,80 @@ import React, { useState } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+
+const API_URL = 'https://digimoncard.io/api-public/search.php';
 
 export default function BasicTextFields() {
 
     const [searchInput, setSearchInput] = useState<string>('');
-    const [results, setResults] = useState<string[]>([])
-
+    const [results, setResults] = useState<string[]>([]);
+    const [error, setError] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
 
     const fetchData = async (input: string) => {
-        const url = 'https://digimoncard.io/api-public/search.php?series=Digimon Card Game&n=';
-        const response = await fetch(`${url}${input}`)
-        const cards = await response.json();
+        setLoading(true);
+        setError('');
 
-        const images = cards.map((x: any) => x.image_url)
-        //console.log(cards);
-        // console.log(images);
-        setResults(images);
-        //return respon;
-    }
+        const params = new URLSearchParams({ series: 'Digimon Card Game', n: input });
+
+        try {
+            const response = await fetch(`${API_URL}?${params}`);
+
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status} ${response.statusText}`);
+            }
+
+            const body = await response.text();
+
+            let cards: unknown;
+            try {
+                cards = JSON.parse(body);
+            } catch {
+                throw new Error(`API did not return JSON: ${body.slice(0, 120)}`);
+            }
+
+            if (!Array.isArray(cards)) {
+                const message = (cards as any)?.error ?? JSON.stringify(cards).slice(0, 120);
+                setResults([]);
+                setError(`No results: ${message}`);
+                return;
+            }
+
+            const images = cards
+                .map((card: any) => card.image_url)
+                .filter((src: unknown): src is string => typeof src === 'string');
+
+            if (images.length === 0) {
+                setError(`Got ${cards.length} card(s) but no image_url field. Keys: ${Object.keys(cards[0] ?? {}).join(', ')}`);
+            }
+
+            setResults(images);
+        } catch (e) {
+            setResults([]);
+            setError(e instanceof Error ? e.message : 'Request failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        //console.log(event.target.value);
         setSearchInput(event.target.value);
-    }
+    };
 
-    const handleClick = (event: React.MouseEvent) => {
+    const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
-        fetchData(searchInput);
-        //console.log(searchInput);
-    }
-
-    const handleEnter = (event: React.KeyboardEvent) => {
-        event.preventDefault();
-        console.log(event)
-        fetchData(searchInput);
-    }
-
+        if (searchInput) {
+            fetchData(searchInput);
+        }
+    };
 
     return (
         <Box>
 
             <Box
                 component="form"
+                onSubmit={handleSubmit}
                 sx={{
                     '& > :not(style)': { m: 1, width: '25ch' },
                     paddingBottom: '40px'
@@ -54,14 +86,18 @@ export default function BasicTextFields() {
                 justifyContent='center'
 
             >
-                <TextField onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleEnter(e)
-                    }
-                }} id="outlined-basic" label="Outlined" variant="outlined" value={searchInput} onChange={handleChange} />
-                <Button variant='contained' disabled={!searchInput} onClick={handleClick}>Search</Button>
+                <TextField id="outlined-basic" label="Card name" variant="outlined" value={searchInput} onChange={handleChange} />
+                <Button type='submit' variant='contained' disabled={!searchInput || loading}>
+                    {loading ? 'Searching...' : 'Search'}
+                </Button>
             </Box>
+
+            {error && (
+                <Box display='flex' justifyContent='center' paddingBottom='20px'>
+                    <Typography color='error'>{error}</Typography>
+                </Box>
+            )}
+
             <Box
                 display='flex'
                 width='100%'
@@ -71,7 +107,7 @@ export default function BasicTextFields() {
                 flexWrap='wrap'
             >
                 {
-                    results.map((x: string) => { return <img style={{ padding: '5px' }} alt='img' src={x} /> })
+                    results.map((src: string) => <img key={src} style={{ padding: '5px' }} alt='card' src={src} />)
                 }
             </Box>
         </Box>
