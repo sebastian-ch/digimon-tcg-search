@@ -1,8 +1,4 @@
 import React, { useState } from 'react';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
 
 const API_URL = 'https://digimoncard.io/api-public/search';
 const IMAGE_BASE = 'https://images.digimoncard.io/images/cards';
@@ -18,7 +14,7 @@ const toCard = (value: any): Card | null =>
         ? { id: value.id, name: typeof value.name === 'string' ? value.name : value.id }
         : null;
 
-export default function BasicTextFields() {
+export default function SearchBar() {
 
     const [searchInput, setSearchInput] = useState<string>('');
     const [results, setResults] = useState<Card[]>([]);
@@ -78,10 +74,6 @@ export default function BasicTextFields() {
         }
     };
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchInput(event.target.value);
-    };
-
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
         if (searchInput) {
@@ -90,53 +82,47 @@ export default function BasicTextFields() {
     };
 
     return (
-        <Box>
-
-            <Box
-                component="form"
-                onSubmit={handleSubmit}
-                sx={{
-                    '& > :not(style)': { m: 1, width: '25ch' },
-                    paddingBottom: '40px'
-                }}
-                display='flex'
-                width='100%'
-                alignItems='center'
-                justifyContent='center'
-
-            >
-                <TextField id="outlined-basic" label="Card name" variant="outlined" value={searchInput} onChange={handleChange} />
-                <Button type='submit' variant='contained' disabled={!searchInput || loading}>
+        <div className="mx-auto max-w-6xl">
+            <form onSubmit={handleSubmit} className="flex flex-wrap items-end justify-center gap-3">
+                <div className="flex flex-col gap-1.5">
+                    <label htmlFor="card-name" className="text-sm font-medium text-slate-700">
+                        Card name
+                    </label>
+                    <input
+                        id="card-name"
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        placeholder="Agumon"
+                        className="w-64 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30"
+                    />
+                </div>
+                <button
+                    type="submit"
+                    disabled={!searchInput || loading}
+                    className="rounded-md bg-sky-600 px-5 py-2 font-medium text-white transition-colors hover:bg-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
                     {loading ? 'Searching...' : 'Search'}
-                </Button>
-            </Box>
+                </button>
+            </form>
 
             {error && (
-                <Box display='flex' justifyContent='center' paddingBottom='20px'>
-                    <Typography color='error'>{error}</Typography>
-                </Box>
+                <p role="alert" className="mt-6 text-center text-red-600">
+                    {error}
+                </p>
             )}
 
-            <Box
-                display='flex'
-                width='100%'
-                alignItems='center'
-                justifyContent='center'
-                paddingBottom='40px'
-                flexWrap='wrap'
-            >
-                {
-                    results.map((card) => (
-                        <img
-                            key={card.id}
-                            style={{ padding: '5px' }}
-                            alt={card.name}
-                            src={`${IMAGE_BASE}/${card.id}.jpg`}
-                            onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
-                        />
-                    ))
-                }
-            </Box>
-        </Box>
+            <div className="mt-10 flex flex-wrap items-start justify-center gap-2">
+                {results.map((card) => (
+                    <img
+                        key={card.id}
+                        alt={card.name}
+                        src={`${IMAGE_BASE}/${card.id}.jpg`}
+                        loading="lazy"
+                        className="w-40 rounded-lg shadow-sm transition-transform hover:scale-105"
+                        onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+                    />
+                ))}
+            </div>
+        </div>
     );
 }
