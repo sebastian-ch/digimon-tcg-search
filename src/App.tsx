@@ -1,10 +1,8 @@
-import React from 'react';
-import './App.css';
-import SearchBar from './components/SearchBar'
+import SearchBar from './components/SearchBar';
 
 function App() {
   return (
-    <div className="App">
+    <div className="min-h-screen bg-slate-50 px-4 py-10">
       <SearchBar />
     </div>
   );
