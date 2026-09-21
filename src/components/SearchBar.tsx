@@ -4,12 +4,24 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
-const API_URL = 'https://digimoncard.io/api-public/search.php';
+const API_URL = 'https://digimoncard.io/api-public/search';
+const IMAGE_BASE = 'https://images.digimoncard.io/images/cards';
+const REQUEST_TIMEOUT = 10000;
+
+type Card = {
+    id: string;
+    name: string;
+};
+
+const toCard = (value: any): Card | null =>
+    value && typeof value.id === 'string'
+        ? { id: value.id, name: typeof value.name === 'string' ? value.name : value.id }
+        : null;
 
 export default function BasicTextFields() {
 
     const [searchInput, setSearchInput] = useState<string>('');
-    const [results, setResults] = useState<string[]>([]);
+    const [results, setResults] = useState<Card[]>([]);
     const [error, setError] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -18,9 +30,11 @@ export default function BasicTextFields() {
         setError('');
 
         const params = new URLSearchParams({ series: 'Digimon Card Game', n: input });
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
         try {
-            const response = await fetch(`${API_URL}?${params}`);
+            const response = await fetch(`${API_URL}?${params}`, { signal: controller.signal });
 
             if (!response.ok) {
                 throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -28,33 +42,38 @@ export default function BasicTextFields() {
 
             const body = await response.text();
 
-            let cards: unknown;
+            let payload: unknown;
             try {
-                cards = JSON.parse(body);
+                payload = JSON.parse(body);
             } catch {
                 throw new Error(`API did not return JSON: ${body.slice(0, 120)}`);
             }
 
-            if (!Array.isArray(cards)) {
-                const message = (cards as any)?.error ?? JSON.stringify(cards).slice(0, 120);
+            if (!Array.isArray(payload)) {
+                const message = (payload as any)?.error ?? JSON.stringify(payload).slice(0, 120);
                 setResults([]);
                 setError(`No results: ${message}`);
                 return;
             }
 
-            const images = cards
-                .map((card: any) => card.image_url)
-                .filter((src: unknown): src is string => typeof src === 'string');
+            const cards = payload
+                .map(toCard)
+                .filter((card): card is Card => card !== null);
 
-            if (images.length === 0) {
-                setError(`Got ${cards.length} card(s) but no image_url field. Keys: ${Object.keys(cards[0] ?? {}).join(', ')}`);
+            setResults(cards);
+
+            if (cards.length === 0) {
+                setError(`No cards found for "${input}"`);
             }
-
-            setResults(images);
         } catch (e) {
             setResults([]);
-            setError(e instanceof Error ? e.message : 'Request failed');
+            if (e instanceof Error && e.name === 'AbortError') {
+                setError('Request timed out. Please try again.');
+            } else {
+                setError(e instanceof Error ? e.message : 'Request failed');
+            }
         } finally {
+            clearTimeout(timer);
             setLoading(false);
         }
     };
@@ -80,9 +99,9 @@ export default function BasicTextFields() {
                     '& > :not(style)': { m: 1, width: '25ch' },
                     paddingBottom: '40px'
                 }}
-                noValidate
-                autoComplete="off"
                 display='flex'
+                width='100%'
+                alignItems='center'
                 justifyContent='center'
 
             >
@@ -101,13 +120,21 @@ export default function BasicTextFields() {
             <Box
                 display='flex'
                 width='100%'
-                minHeight='70%'
-                justifyContent='center'
                 alignItems='center'
+                justifyContent='center'
+                paddingBottom='40px'
                 flexWrap='wrap'
             >
                 {
-                    results.map((src: string) => <img key={src} style={{ padding: '5px' }} alt='card' src={src} />)
+                    results.map((card) => (
+                        <img
+                            key={card.id}
+                            style={{ padding: '5px' }}
+                            alt={card.name}
+                            src={`${IMAGE_BASE}/${card.id}.jpg`}
+                            onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+                        />
+                    ))
                 }
             </Box>
         </Box>
